@@ -177,6 +177,18 @@ namespace RttClientDN
                     }
                     break;
 
+                // The whole window is client area, but WS_THICKFRAME is set (for native sizing), so DefWindowProc
+                // would paint a light frame over our content on activation changes / title updates. WPF doesn't
+                // know about that overdraw, so it lingers until the image under it repaints. Suppress it.
+                case NativeMethods.WM_NCACTIVATE:
+                    handled = true;
+                    return (IntPtr)1; // allow the activation change, skip the frame paint
+                case NativeMethods.WM_NCPAINT:
+                case NativeMethods.WM_NCUAHDRAWCAPTION:
+                case NativeMethods.WM_NCUAHDRAWFRAME:
+                    handled = true;
+                    return IntPtr.Zero;
+
                 case NativeMethods.WM_NCHITTEST:
                     handled = true;
                     return (IntPtr)HitTest(NativeMethods.LoWordSigned(lParam), NativeMethods.HiWordSigned(lParam));

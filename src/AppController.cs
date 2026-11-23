@@ -5,6 +5,7 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Media;
 using System.Windows.Threading;
 
 namespace RttClientDN
@@ -173,8 +174,17 @@ namespace RttClientDN
             exit.Click += (s, e) => Exit();
             menu.Items.Add(exit);
 
+            // Place at the cursor explicitly. PlacementMode.MousePoint uses WPF's last-seen mouse position, which is
+            // stale when the click arrived as a non-client message (draggable mode) or the window was moved natively.
             menu.PlacementTarget = w;
-            menu.Placement = PlacementMode.MousePoint;
+            menu.Placement = PlacementMode.Relative;
+            if (NativeMethods.GetCursorPos(out var cursor))
+            {
+                var r = w.Rect;
+                var dpi = VisualTreeHelper.GetDpi(w);
+                menu.HorizontalOffset = (cursor.X - r.Left) / dpi.DpiScaleX;
+                menu.VerticalOffset = (cursor.Y - r.Top) / dpi.DpiScaleY;
+            }
             menu.IsOpen = true;
         }
 

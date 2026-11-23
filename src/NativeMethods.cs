@@ -54,6 +54,10 @@ namespace RttClientDN
         public const int WM_GETMINMAXINFO = 0x0024;
         public const int WM_NCCALCSIZE = 0x0083;
         public const int WM_NCHITTEST = 0x0084;
+        public const int WM_NCPAINT = 0x0085;
+        public const int WM_NCACTIVATE = 0x0086;
+        public const int WM_NCUAHDRAWCAPTION = 0x00AE; // undocumented: themed caption repaint
+        public const int WM_NCUAHDRAWFRAME = 0x00AF;   // undocumented: themed frame repaint
         public const int WM_NCLBUTTONDBLCLK = 0x00A3;
         public const int WM_NCRBUTTONDOWN = 0x00A4;
         public const int WM_NCRBUTTONUP = 0x00A5;
@@ -113,6 +117,10 @@ namespace RttClientDN
 
         [DllImport("user32.dll")]
         public static extern int SetWindowLong(IntPtr hWnd, int index, int value);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool GetCursorPos(out POINT pt);
 
         [DllImport("user32.dll")]
         public static extern IntPtr MonitorFromPoint(POINT pt, uint flags);

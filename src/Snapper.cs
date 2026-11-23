@@ -10,7 +10,7 @@ namespace RttClientDN
     /// Rules: an edge/center/display/aspect snap engages when within <see cref="Threshold"/> of its target.
     /// It releases once the mouse has travelled more than <see cref="ReleaseDistance"/> since it engaged
     /// (or leaves the snap zone). A target released by travel is then ignored until the mouse leaves its zone,
-    /// so it doesn't immediately re-grab.
+    /// so it doesn't immediately re-grab. Aspect-ratio snapping is exempt: it applies whenever within the threshold.
     ///
     /// The rects Windows passes in WM_MOVING / WM_SIZING are always derived from the cursor (not from
     /// our previous adjustment), so they are the "raw" mouse-driven positions used for travel.
@@ -23,8 +23,6 @@ namespace RttClientDN
 
         private readonly Axis _moveX = new Axis(), _moveY = new Axis();
         private readonly Axis _left = new Axis(), _right = new Axis(), _top = new Axis(), _bottom = new Axis();
-        private bool _aspectEngaged, _aspectSuppressed;
-        private int _aspectEntryW, _aspectEntryH;
 
         /// <summary>Snap a moving window: edges/centers to other windows, edges flush to display edges.</summary>
         public RECT SnapMove(RECT r, IList<RECT> others, IList<RECT> monitors)
@@ -90,14 +88,14 @@ namespace RttClientDN
             }
 
             if (aspect > 0)
-                r = SnapAspect(r, raw, aspect, left, right, top, bottom);
+                r = SnapAspect(r, aspect, left, right, top, bottom);
 
             if (r.Width < MinSize) { if (left) r.Left = r.Right - MinSize; else r.Right = r.Left + MinSize; }
             if (r.Height < MinSize) { if (top) r.Top = r.Bottom - MinSize; else r.Bottom = r.Top + MinSize; }
             return r;
         }
 
-        private RECT SnapAspect(RECT r, RECT raw, double aspect, bool left, bool right, bool top, bool bottom)
+        private RECT SnapAspect(RECT r, double aspect, bool left, bool right, bool top, bool bottom)
         {
             int w = r.Width, h = r.Height;
             int idealH = (int)Math.Round(w / aspect);
@@ -110,20 +108,9 @@ namespace RttClientDN
             bool fixHeight = horizontalEdge && (!verticalEdge || errH <= errW);
             int err = fixHeight ? errH : errW;
 
-            if (_aspectEngaged)
-            {
-                int travel = Math.Max(Math.Abs(raw.Width - _aspectEntryW), Math.Abs(raw.Height - _aspectEntryH));
-                if (travel > ReleaseDistance) { _aspectEngaged = false; _aspectSuppressed = true; }
-                else if (err > Threshold) _aspectEngaged = false;
-            }
-            if (_aspectSuppressed && err > Threshold) _aspectSuppressed = false;
-            if (!_aspectEngaged && !_aspectSuppressed && err <= Threshold)
-            {
-                _aspectEngaged = true;
-                _aspectEntryW = raw.Width;
-                _aspectEntryH = raw.Height;
-            }
-            if (!_aspectEngaged) return r;
+            // No travel-release here: unlike edge snaps, this never holds back the edge being dragged,
+            // so simply lock to the exact ratio whenever we're within the threshold.
+            if (err > Threshold) return r;
 
             if (fixHeight) { if (top) r.Top = r.Bottom - idealH; else r.Bottom = r.Top + idealH; }
             else { if (left) r.Left = r.Right - idealW; else r.Right = r.Left + idealW; }
