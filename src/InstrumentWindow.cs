@@ -217,7 +217,7 @@ namespace RttClientDN
 
                 case NativeMethods.WM_ENTERSIZEMOVE:
                     _inSizeMove = true;
-                    _snap = new SnapSession();
+                    _snap = NewSnapSession();
                     break;
 
                 case NativeMethods.WM_EXITSIZEMOVE:
@@ -228,8 +228,9 @@ namespace RttClientDN
 
                 case NativeMethods.WM_MOVING:
                 {
-                    var r = Marshal.PtrToStructure<RECT>(lParam);
-                    r = (_snap ?? (_snap = new SnapSession())).SnapMove(r, _controller.OtherWindowRects(this), NativeMethods.GetMonitorRects());
+                    var snap = _snap ?? (_snap = NewSnapSession());
+                    NativeMethods.GetCursorPos(out var cursor);
+                    var r = snap.SnapMove(cursor, _controller.OtherWindowRects(this), NativeMethods.GetMonitorRects());
                     Marshal.StructureToPtr(r, lParam, false);
                     handled = true;
                     return (IntPtr)1;
@@ -237,8 +238,9 @@ namespace RttClientDN
 
                 case NativeMethods.WM_SIZING:
                 {
-                    var r = Marshal.PtrToStructure<RECT>(lParam);
-                    r = (_snap ?? (_snap = new SnapSession())).SnapSize(r, wParam.ToInt32(), _controller.OtherWindowRects(this), NativeMethods.GetMonitorRects(), ContentAspect);
+                    var snap = _snap ?? (_snap = NewSnapSession());
+                    NativeMethods.GetCursorPos(out var cursor);
+                    var r = snap.SnapSize(cursor, wParam.ToInt32(), _controller.OtherWindowRects(this), NativeMethods.GetMonitorRects(), ContentAspect);
                     Marshal.StructureToPtr(r, lParam, false);
                     handled = true;
                     return (IntPtr)1;
@@ -259,6 +261,13 @@ namespace RttClientDN
                 }
             }
             return IntPtr.Zero;
+        }
+
+        private SnapSession NewSnapSession()
+        {
+            NativeMethods.GetWindowRect(_hwnd, out var rect);
+            NativeMethods.GetCursorPos(out var cursor);
+            return new SnapSession(rect, cursor);
         }
 
         private int HitTest(int x, int y)

@@ -12,8 +12,8 @@ namespace RttClientDN
     /// (or leaves the snap zone). A target released by travel is then ignored until the mouse leaves its zone,
     /// so it doesn't immediately re-grab. Aspect-ratio snapping is exempt: it applies whenever within the threshold.
     ///
-    /// The rects Windows passes in WM_MOVING / WM_SIZING are always derived from the cursor (not from
-    /// our previous adjustment), so they are the "raw" mouse-driven positions used for travel.
+    /// The unsnapped ("raw") rect is always derived from the cursor position relative to where the drag began,
+    /// so snaps never accumulate and travel is measured in real mouse movement.
     /// </summary>
     internal sealed class SnapSession
     {
@@ -21,12 +21,27 @@ namespace RttClientDN
         public const int ReleaseDistance = 10;
         public const int MinSize = 32;
 
+        private readonly RECT _startRect;
+        private readonly POINT _startCursor;
+
+        /// <param name="startRect">Window rect when the move/size began.</param>
+        /// <param name="startCursor">Cursor position when the move/size began.</param>
+        public SnapSession(RECT startRect, POINT startCursor)
+        {
+            _startRect = startRect;
+            _startCursor = startCursor;
+        }
+
         private readonly Axis _moveX = new Axis(), _moveY = new Axis();
         private readonly Axis _left = new Axis(), _right = new Axis(), _top = new Axis(), _bottom = new Axis();
 
         /// <summary>Snap a moving window: edges/centers to other windows, edges flush to display edges.</summary>
-        public RECT SnapMove(RECT r, IList<RECT> others, IList<RECT> monitors)
+        public RECT SnapMove(POINT cursor, IList<RECT> others, IList<RECT> monitors)
         {
+            // Derive the unsnapped rect from the cursor rather than trusting the WM_MOVING rect, which may be
+            // built on top of our previous (snapped) adjustment depending on the OS/Wine version.
+            int cdx = cursor.X - _startCursor.X, cdy = cursor.Y - _startCursor.Y;
+            var r = new RECT(_startRect.Left + cdx, _startRect.Top + cdy, _startRect.Right + cdx, _startRect.Bottom + cdy);
             int w = r.Width, h = r.Height;
             var xs = new List<int>(); var ys = new List<int>();
             foreach (var o in others)
@@ -50,12 +65,20 @@ namespace RttClientDN
         /// Snap a resizing window. Only the edge(s) being dragged move. Afterwards, if the size is within
         /// the threshold of the image aspect ratio, snap to that exact ratio.
         /// </summary>
-        public RECT SnapSize(RECT raw, int wmszEdge, IList<RECT> others, IList<RECT> monitors, double aspect)
+        public RECT SnapSize(POINT cursor, int wmszEdge, IList<RECT> others, IList<RECT> monitors, double aspect)
         {
             bool left = wmszEdge == NativeMethods.WMSZ_LEFT || wmszEdge == NativeMethods.WMSZ_TOPLEFT || wmszEdge == NativeMethods.WMSZ_BOTTOMLEFT;
             bool right = wmszEdge == NativeMethods.WMSZ_RIGHT || wmszEdge == NativeMethods.WMSZ_TOPRIGHT || wmszEdge == NativeMethods.WMSZ_BOTTOMRIGHT;
             bool top = wmszEdge == NativeMethods.WMSZ_TOP || wmszEdge == NativeMethods.WMSZ_TOPLEFT || wmszEdge == NativeMethods.WMSZ_TOPRIGHT;
             bool bottom = wmszEdge == NativeMethods.WMSZ_BOTTOM || wmszEdge == NativeMethods.WMSZ_BOTTOMLEFT || wmszEdge == NativeMethods.WMSZ_BOTTOMRIGHT;
+
+            // Unsnapped rect from the cursor: dragged edges follow the mouse, the others stay where they started.
+            int cdx = cursor.X - _startCursor.X, cdy = cursor.Y - _startCursor.Y;
+            var raw = _startRect;
+            if (left) raw.Left += cdx;
+            if (right) raw.Right += cdx;
+            if (top) raw.Top += cdy;
+            if (bottom) raw.Bottom += cdy;
 
             var r = raw;
             if (left)
