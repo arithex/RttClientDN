@@ -26,6 +26,7 @@ namespace RttClientDN
         private IntPtr _hwnd;
         private RECT _rect;
         private bool _inSizeMove;
+        private SnapSession _snap; // per interactive move/size; holds snap/unsnap state
         private bool _draggable;
 
         public int Index { get; }
@@ -196,7 +197,7 @@ namespace RttClientDN
                 case NativeMethods.WM_GETMINMAXINFO:
                 {
                     var mmi = Marshal.PtrToStructure<MINMAXINFO>(lParam);
-                    mmi.ptMinTrackSize = new POINT(Snapper.MinSize, Snapper.MinSize);
+                    mmi.ptMinTrackSize = new POINT(SnapSession.MinSize, SnapSession.MinSize);
                     Marshal.StructureToPtr(mmi, lParam, false);
                     handled = true;
                     return IntPtr.Zero;
@@ -204,17 +205,19 @@ namespace RttClientDN
 
                 case NativeMethods.WM_ENTERSIZEMOVE:
                     _inSizeMove = true;
+                    _snap = new SnapSession();
                     break;
 
                 case NativeMethods.WM_EXITSIZEMOVE:
                     _inSizeMove = false;
+                    _snap = null;
                     _controller.OnWindowStateChanged(this);
                     break;
 
                 case NativeMethods.WM_MOVING:
                 {
                     var r = Marshal.PtrToStructure<RECT>(lParam);
-                    r = Snapper.SnapMove(r, _controller.OtherWindowRects(this), NativeMethods.GetMonitorRects());
+                    r = (_snap ?? (_snap = new SnapSession())).SnapMove(r, _controller.OtherWindowRects(this), NativeMethods.GetMonitorRects());
                     Marshal.StructureToPtr(r, lParam, false);
                     handled = true;
                     return (IntPtr)1;
@@ -223,7 +226,7 @@ namespace RttClientDN
                 case NativeMethods.WM_SIZING:
                 {
                     var r = Marshal.PtrToStructure<RECT>(lParam);
-                    r = Snapper.SnapSize(r, wParam.ToInt32(), _controller.OtherWindowRects(this), NativeMethods.GetMonitorRects(), ContentAspect);
+                    r = (_snap ?? (_snap = new SnapSession())).SnapSize(r, wParam.ToInt32(), _controller.OtherWindowRects(this), NativeMethods.GetMonitorRects(), ContentAspect);
                     Marshal.StructureToPtr(r, lParam, false);
                     handled = true;
                     return (IntPtr)1;

@@ -187,7 +187,7 @@ namespace RttClientDN
 
             const int margin = 20, gap = 10;
             int perRow = 4;
-            int size = Math.Max(Snapper.MinSize, Math.Min(400, (work.Width - 2 * margin - (perRow - 1) * gap) / perRow));
+            int size = Math.Max(SnapSession.MinSize, Math.Min(400, (work.Width - 2 * margin - (perRow - 1) * gap) / perRow));
             var rects = new RECT[RttReader.ImageCount];
             for (int i = 0; i < rects.Length; i++)
             {

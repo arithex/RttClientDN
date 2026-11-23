@@ -30,7 +30,7 @@ namespace RttClientDN
                     var n = new int[5];
                     for (int i = 0; i < 5; i++)
                         if (!int.TryParse(p[i].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out n[i])) return null;
-                    if (n[2] < Snapper.MinSize || n[3] < Snapper.MinSize) return null;
+                    if (n[2] < SnapSession.MinSize || n[3] < SnapSession.MinSize) return null;
                     return new WindowState { Rect = RECT.FromXYWH(n[0], n[1], n[2], n[3]), Visible = n[4] != 0 };
                 }
             }
