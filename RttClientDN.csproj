@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <AssemblyName>RttClientDN</AssemblyName>
+    <RootNamespace>RttClientDN</RootNamespace>
+    <!-- AnyCPU, but run as a native 64-bit process where possible (x64, and arm64 on .NET Framework 4.8.1+). -->
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>latest</LangVersion>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Product>RttClientDN</Product>
+    <Company>Benchmark Sims</Company>
+    <Version>0.1.0</Version>
+  </PropertyGroup>
+
+  <!--
+    WPF is referenced directly (rather than via UseWPF) because the app has no XAML;
+    this keeps the project buildable with any .NET SDK, including on non-Windows hosts.
+  -->
+  <ItemGroup>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>
