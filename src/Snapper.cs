@@ -17,8 +17,8 @@ namespace RttClientDN
     /// </summary>
     internal sealed class SnapSession
     {
-        public const int Threshold = 10;
-        public const int ReleaseDistance = 10;
+        public const int Threshold = 20;
+        public const int ReleaseDistance = 20;
         public const int MinSize = 32;
 
         private readonly RECT _startRect;
